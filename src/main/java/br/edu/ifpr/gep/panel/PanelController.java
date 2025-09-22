@@ -11,18 +11,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextInputDialog;
 import javafx.stage.Stage;
-import javafx.fxml.Initializable;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 
-import java.net.URL;
-import java.util.ResourceBundle;
-
-public class PanelController implements Initializable{
+public class PanelController {
     private PortariaRepository repo = PortariaRepository.INSTANCE;
 
     @FXML
@@ -591,7 +585,7 @@ public class PanelController implements Initializable{
     @FXML
     private void voltar() throws Exception {
         Stage stage = (Stage) voltarButton.getScene().getWindow();
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/br/edu/ifpr/gep/panel/MainPanel.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("br/edu/ifpr/gep/panel/MainPanel.fxml"));
 
         // Verifica se o recurso FXML foi encontrado
         if (loader.getLocation() == null) {
@@ -629,25 +623,4 @@ public class PanelController implements Initializable{
         }
         return sb.toString();
     }
-    
-    @FXML
-    private TableColumn<Portaria, String> colEmissor;
-    
-    @FXML
-    private TableColumn<Portaria, Integer> colNumero;
-    
-    @FXML
-    private TableColumn<Portaria, LocalDate> colPublicacao;
-    
-    @FXML
-    private TableColumn<Portaria, String> colMembro;
-    
-    @FXML
-    private TableView<Portaria> table;
-    
-	@Override
-	public void initialize(URL location, ResourceBundle resources) {
-		// TODO Auto-generated method stub
-		
-	}
 }
