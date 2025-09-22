@@ -585,7 +585,7 @@ public class PanelController {
     @FXML
     private void voltar() throws Exception {
         Stage stage = (Stage) voltarButton.getScene().getWindow();
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("br/edu/ifpr/gep/panel/MainPanel.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/br/edu/ifpr/gep/panel/MainPanel.fxml"));
 
         // Verifica se o recurso FXML foi encontrado
         if (loader.getLocation() == null) {

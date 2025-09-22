@@ -1,5 +1,7 @@
 package br.edu.ifpr.gep.model.repository;
 
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,11 +11,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import br.edu.ifpr.gep.model.Portaria;
 import br.edu.ifpr.gep.model.StringSearch;
 
 public enum PortariaRepository {
     INSTANCE; // Única instância da classe (singleton)
+    
     // a "base de dados" de portaias é uma coleção do tipo mapa (Map).
     // uma estrutura do tipo se assemelha a um dicionário, ou seja,
     // é constituídas de dois dados: uma chave (key) e um valor (value),
@@ -24,9 +30,37 @@ public enum PortariaRepository {
     // neste caso, um objeto PortariaPK representa a 'key' e um objeto
     // Portaria representa o 'value'.
     private final Map<PortariaPK, Portaria> portarias = new HashMap<>();
-
-    PortariaRepository() {}
-
+    
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final File dataFile = new File("portarias.json");
+    
+    PortariaRepository() {
+        objectMapper.registerModule(new JavaTimeModule());
+        loadData();
+    }
+    
+    private void loadData() {
+        if (dataFile.exists()) {
+            try {
+                // Assumindo que PortariaPK e Portaria são serializáveis com Jackson
+                Map<PortariaPK, Portaria> loaded = objectMapper.readValue(dataFile, 
+                    objectMapper.getTypeFactory().constructMapType(Map.class, PortariaPK.class, Portaria.class));
+                portarias.putAll(loaded);
+            } catch (IOException e) {
+                // Em caso de erro, inicializa vazio
+                System.err.println("Erro ao carregar dados: " + e.getMessage());
+            }
+        }
+    }
+    
+    private void saveData() {
+        try {
+            objectMapper.writeValue(dataFile, portarias);
+        } catch (IOException e) {
+            System.err.println("Erro ao salvar dados: " + e.getMessage());
+        }
+    }
+    
     public boolean insert(Portaria portaria) {
         if (findPortaria(portaria.getEmissor(),
                 portaria.getNúmero(),
@@ -40,7 +74,11 @@ public enum PortariaRepository {
         // quando o método put() retorna 'null' indica que não havia
         // um objeto associado ao objeto representado pela chave do
         // mapa
-        return portarias.put(pk, portaria) == null;
+        boolean inserted = portarias.put(pk, portaria) == null;
+        if (inserted) {
+            saveData();
+        }
+        return inserted;
     }
 
     public boolean update(Portaria portaria) {
@@ -55,6 +93,7 @@ public enum PortariaRepository {
             // e não podem ser alterados
             p.setMembro(portaria.getMembro());
             // encontrou e alterou a portaria
+            saveData();
             return true;
         }
         // não encontrou a portaria para alterar
@@ -65,7 +104,11 @@ public enum PortariaRepository {
         PortariaPK pk = new PortariaPK(emissor, número, ano);
         // se "pk" é encontrado na estrutura, o método remove() o
         // retornará para indicar que a exclusão foi bem sucedida
-        return portarias.remove(pk) != null;
+        boolean deleted = portarias.remove(pk) != null;
+        if (deleted) {
+            saveData();
+        }
+        return deleted;
     }
 
     public int delete() {
@@ -73,6 +116,7 @@ public enum PortariaRepository {
         int total = portarias.size();
         // "limpa" os objetos da estrutura (exclui os registros da base de dados)
         portarias.clear();
+        saveData();
 
         return total;
     }
