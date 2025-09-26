@@ -13,3 +13,4 @@
 /home/dark/eclipse-workspace/gep/src/main/java/br/edu/ifpr/gep/panel/dados/DadosController.java
 /home/dark/eclipse-workspace/gep/src/main/java/br/edu/ifpr/gep/model/utils/NúmeroComparator.java
 /home/dark/eclipse-workspace/gep/src/main/java/module-info.java
+/home/dark/eclipse-workspace/gep/src/main/java/br/edu/ifpr/gep/model/repository/PortariaPKKeyDeserializer.java

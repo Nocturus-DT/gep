@@ -35,9 +35,9 @@ public class PortariaPK {
 
    @Override
    public String toString() {
-      return "PortariaPK [emissor=" + emissor + ", numero=" + numero +  // Ajustado sem acento
-             ", ano=" + ano + "]";
+       return emissor + "_" + numero + "_" + ano;
    }
+
 
    @Override
    public int hashCode() {

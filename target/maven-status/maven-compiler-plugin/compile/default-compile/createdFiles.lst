@@ -11,6 +11,7 @@ br/edu/ifpr/gep/panel/dados/DadosController.class
 br/edu/ifpr/gep/model/utils/EmissorComparator.class
 br/edu/ifpr/gep/model/utils/EmissorNúmeroAnoComparator.class
 br/edu/ifpr/gep/panel/PanelControle.class
+br/edu/ifpr/gep/model/repository/PortariaPKKeyDeserializer.class
 br/edu/ifpr/gep/panel/PanelController.class
 br/edu/ifpr/gep/model/repository/PortariaRepository.class
 br/edu/ifpr/gep/model/utils/PublicaçãoComparator.class
