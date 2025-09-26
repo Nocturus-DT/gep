@@ -12,8 +12,8 @@ module teste {
     opens br.edu.ifpr.gep.panel.consulta to javafx.fxml;
 
     opens br.edu.ifpr.gep.model.repository;
-    opens br.edu.ifpr.gep.model to com.fasterxml.jackson.databind;
-
+    opens br.edu.ifpr.gep.model to com.fasterxml.jackson.databind, javafx.base;
+    
     exports br.edu.ifpr.gep.aplicacao;
     exports br.edu.ifpr.gep.panel;
     exports br.edu.ifpr.gep.panel.dados;

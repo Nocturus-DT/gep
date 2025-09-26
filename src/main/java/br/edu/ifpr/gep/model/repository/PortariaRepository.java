@@ -36,20 +36,27 @@ public enum PortariaRepository {
     
     PortariaRepository() {
         objectMapper.registerModule(new JavaTimeModule());
+        System.out.println("Iniciando repositório... Arquivo JSON: " + dataFile.getAbsolutePath());  // Mostra onde o JSON fica
         loadData();
+        System.out.println("Dados carregados: " + portarias.size() + " portarias.");  // Verifica quantos carregaram
     }
-    
+
     private void loadData() {
         if (dataFile.exists()) {
+            System.out.println("JSON existe, tentando carregar...");  // Debug
             try {
-                // Assumindo que PortariaPK e Portaria são serializáveis com Jackson
+                @SuppressWarnings("unchecked")
                 Map<PortariaPK, Portaria> loaded = objectMapper.readValue(dataFile, 
                     objectMapper.getTypeFactory().constructMapType(Map.class, PortariaPK.class, Portaria.class));
                 portarias.putAll(loaded);
+                System.out.println("Carregamento OK: " + loaded.size() + " itens.");  // Confirma
             } catch (IOException e) {
-                // Em caso de erro, inicializa vazio
                 System.err.println("Erro ao carregar dados: " + e.getMessage());
+                e.printStackTrace();  // Mostra o erro exato (ex.: mismatch de campos)
+                portarias.clear();  // Limpa se falhar
             }
+        } else {
+            System.out.println("JSON não existe, iniciando vazio.");  // Confirma vazio
         }
     }
     
@@ -63,14 +70,14 @@ public enum PortariaRepository {
     
     public boolean insert(Portaria portaria) {
         if (findPortaria(portaria.getEmissor(),
-                portaria.getNúmero(),
-                portaria.getPublicação().getYear()).isPresent()) {
+                portaria.getNumero(),
+                portaria.getPublicacao().getYear()).isPresent()) {
             return false; // Portaria com emissor, número e ano da publicação já existe
         }
 
         PortariaPK pk = new PortariaPK(portaria.getEmissor(),
-                portaria.getNúmero(),
-                portaria.getPublicação().getYear());
+                portaria.getNumero(),
+                portaria.getPublicacao().getYear());
         // quando o método put() retorna 'null' indica que não havia
         // um objeto associado ao objeto representado pela chave do
         // mapa
@@ -83,8 +90,8 @@ public enum PortariaRepository {
 
     public boolean update(Portaria portaria) {
         Optional<Portaria> temp = findPortaria(portaria.getEmissor(),
-                portaria.getNúmero(),
-                portaria.getPublicação()
+                portaria.getNumero(),
+                portaria.getPublicacao()
                         .getYear());
 
         if (temp.isPresent()) {
@@ -100,8 +107,8 @@ public enum PortariaRepository {
         return false;
     }
 
-    public boolean delete(String emissor, Integer número, Integer ano) {
-        PortariaPK pk = new PortariaPK(emissor, número, ano);
+    public boolean delete(String emissor, Integer numero, Integer ano) {
+        PortariaPK pk = new PortariaPK(emissor, numero, ano);
         // se "pk" é encontrado na estrutura, o método remove() o
         // retornará para indicar que a exclusão foi bem sucedida
         boolean deleted = portarias.remove(pk) != null;
@@ -132,22 +139,22 @@ public enum PortariaRepository {
                 .collect(Collectors.toList());
     }
 
-    public List<Portaria> findByNúmero(Integer number) {
+    public List<Portaria> findByNumero(Integer number) {
         if (number == null) return Collections.emptyList();
         return portarias.entrySet()
                 .stream()
-                .filter(p -> p.getValue().getNúmero().equals(number))
+                .filter(p -> p.getValue().getNumero().equals(number))
                 .map(Map.Entry::getValue)
                 .collect(Collectors.toList());
     }
 
-    public List<Portaria> findByPeríodo(LocalDate start, LocalDate end) {
+    public List<Portaria> findByPeriodo(LocalDate start, LocalDate end) {
         if (start == null || end == null) return Collections.emptyList();
 
         return portarias.entrySet()
                 .stream()
                 .filter(p -> {
-                    LocalDate date = p.getValue().getPublicação();
+                    LocalDate date = p.getValue().getPublicacao();
                     return (date.isEqual(start) || date.isAfter(start)) &&
                             (date.isEqual(end) || date.isBefore(end));
                 })
@@ -155,12 +162,12 @@ public enum PortariaRepository {
                 .collect(Collectors.toList());
     }
 
-    public List<Portaria> findByPublicação(LocalDate start) {
+    public List<Portaria> findByPublicacao(LocalDate start) {
         if (start == null) return Collections.emptyList();
 
         return portarias.entrySet()
                 .stream()
-                .filter(p -> p.getValue().getPublicação().isEqual(start))
+                .filter(p -> p.getValue().getPublicacao().isEqual(start))
                 .map(Map.Entry::getValue)
                 .collect(Collectors.toList());
     }
@@ -175,8 +182,8 @@ public enum PortariaRepository {
                 .collect(Collectors.toList());
     }
 
-    public Optional<Portaria> findPortaria(String emissor, Integer número, Integer ano) {
-        PortariaPK pk = new PortariaPK(emissor, número, ano);
+    public Optional<Portaria> findPortaria(String emissor, Integer numero, Integer ano) {
+        PortariaPK pk = new PortariaPK(emissor, numero, ano);
 
         return portarias.entrySet().stream()
                 .filter(p -> p.getKey().equals(pk))

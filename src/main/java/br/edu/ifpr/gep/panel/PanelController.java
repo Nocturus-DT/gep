@@ -3,20 +3,28 @@ package br.edu.ifpr.gep.panel;
 import br.edu.ifpr.gep.model.Portaria;
 import br.edu.ifpr.gep.model.StringSearch;
 import br.edu.ifpr.gep.model.repository.PortariaRepository;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.fxml.Initializable;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.TabPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
+import java.util.ResourceBundle;
 
-public class PanelController {
+public class PanelController implements Initializable {
     private PortariaRepository repo = PortariaRepository.INSTANCE;
 
     @FXML
@@ -47,6 +55,49 @@ public class PanelController {
     @FXML
     private Button nomeButton;
 
+    // Campos para a tabela
+    @FXML
+    private TableView<Portaria> tableView;
+    @FXML
+    private TableColumn<Portaria, String> colPortaria;
+    @FXML
+    private TableColumn<Portaria, String> colEmissor;
+    @FXML
+    private TableColumn<Portaria, Integer> colNumero;
+    @FXML
+    private TableColumn<Portaria, LocalDate> colPublicacao;
+    @FXML
+    private TableColumn<Portaria, String> colNome;
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        // Configura as colunas da tabela
+    	colEmissor.setCellValueFactory(new PropertyValueFactory<>("emissor"));
+    	colNumero.setCellValueFactory(new PropertyValueFactory<>("numero"));  // Sem acento
+    	colPublicacao.setCellValueFactory(new PropertyValueFactory<>("publicacao"));  // Sem acento
+    	colNome.setCellValueFactory(new PropertyValueFactory<>("membro"));
+
+        // Coluna "Portaria" personalizada (formato: "Portaria [Número]/[Ano]")
+    	colPortaria.setCellValueFactory(cellData -> {
+    	    Portaria portaria = cellData.getValue();
+    	    if (portaria != null) {
+    	        return javafx.beans.binding.Bindings.createStringBinding(() -> 
+    	            "Portaria " + portaria.getNumero() + "/" + portaria.getPublicacao().getYear());  // Ajustado sem acento
+    	    }
+    	    return javafx.beans.binding.Bindings.createStringBinding(() -> "");
+    	});
+
+        // Carrega os dados iniciais do JSON
+        updateTable();
+    }
+
+    // Método para atualizar a tabela com dados do JSON
+    private void updateTable() {
+        List<Portaria> portarias = repo.findAll();
+        ObservableList<Portaria> observableList = FXCollections.observableArrayList(portarias);
+        tableView.setItems(observableList);
+    }
+
     @FXML
     private void simularDados() {
         repo.insert(new Portaria("MEC", 234, LocalDate.of(2000, 5, 30), "Alana Beatriz Pereira"));
@@ -65,98 +116,45 @@ public class PanelController {
         repo.insert(new Portaria("MJ", 234, LocalDate.of(2022, 6, 15), "Juliana Adriana Mariah Jesus"));
         repo.insert(new Portaria("UFPR", 11, LocalDate.of(2000, 5, 30), "Louise Aurora Sophia da Conceição"));
         showAlert(Alert.AlertType.INFORMATION, "Sucesso", "Dados simulados com sucesso!");
+        updateTable();
     }
 
     @FXML
     private void incluir() {
         try {
-            String emissor = null;
-            while (emissor == null) {
-                TextInputDialog emissorDialog = new TextInputDialog();
-                emissorDialog.setTitle("Incluir Portaria");
-                emissorDialog.setHeaderText("Digite o emissor:");
-                Optional<String> emissorResult = emissorDialog.showAndWait();
-                if (!emissorResult.isPresent()) {
-                    showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de inclusão cancelada.");
-                    return;
-                }
-                String input = emissorResult.get().trim();
-                if (input.isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo emissor não pode estar em branco.");
-                    continue;
-                }
-                emissor = input;
+            String emissor = promptInput("Incluir Portaria", "Digite o emissor:", false);
+            if (emissor == null) {
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de inclusão cancelada.");
+                return;
             }
 
-            Integer num = null;
-            while (num == null) {
-                TextInputDialog numDialog = new TextInputDialog();
-                numDialog.setTitle("Incluir Portaria");
-                numDialog.setHeaderText("Digite o número:");
-                Optional<String> numResult = numDialog.showAndWait();
-                if (!numResult.isPresent()) {
-                    showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de inclusão cancelada.");
-                    return;
-                }
-                String input = numResult.get().trim();
-                if (input.isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo número não pode estar em branco.");
-                    continue;
-                }
-                try {
-                    num = Integer.parseInt(input);
-                } catch (NumberFormatException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O número deve ser um valor numérico válido.");
-                }
+            Integer num = promptInteger("Incluir Portaria", "Digite o número:", false);
+            if (num == null) {
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de inclusão cancelada.");
+                return;
             }
 
-            LocalDate data = null;
-            while (data == null) {
-                TextInputDialog dataDialog = new TextInputDialog();
-                dataDialog.setTitle("Incluir Portaria");
-                dataDialog.setHeaderText("Digite a data de publicação (yyyy-mm-dd):");
-                Optional<String> dataResult = dataDialog.showAndWait();
-                if (!dataResult.isPresent()) {
-                    showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de inclusão cancelada.");
-                    return;
-                }
-                String input = dataResult.get().trim();
-                if (input.isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo data não pode estar em branco.");
-                    continue;
-                }
-                try {
-                    data = LocalDate.parse(input);
-                } catch (DateTimeParseException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "A data deve estar no formato yyyy-mm-dd.");
-                }
+            LocalDate data = promptDate("Incluir Portaria", "Digite a data de publicação (yyyy-mm-dd):", false);
+            if (data == null) {
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de inclusão cancelada.");
+                return;
             }
 
-            String membro = null;
-            while (membro == null) {
-                TextInputDialog membroDialog = new TextInputDialog();
-                membroDialog.setTitle("Incluir Portaria");
-                membroDialog.setHeaderText("Digite o membro:");
-                Optional<String> membroResult = membroDialog.showAndWait();
-                if (!membroResult.isPresent()) {
-                    showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de inclusão cancelada.");
-                    return;
-                }
-                String input = membroResult.get().trim();
-                if (input.isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo membro não pode estar em branco.");
-                    continue;
-                }
-                membro = input;
+            String membro = promptInput("Incluir Portaria", "Digite o membro:", false);
+            if (membro == null) {
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de inclusão cancelada.");
+                return;
             }
 
             Portaria portaria = new Portaria(emissor, num, data, membro);
             if (repo.insert(portaria)) {
                 showAlert(Alert.AlertType.INFORMATION, "Sucesso", "Portaria incluída com sucesso!");
+                updateTable();
             } else {
                 showAlert(Alert.AlertType.ERROR, "Erro", "Erro ao incluir portaria (já existe ou dados inválidos).");
             }
         } catch (Exception e) {
+            System.err.println("Erro na inclusão: " + e.getMessage());
             showAlert(Alert.AlertType.ERROR, "Erro", "Erro inesperado: " + e.getMessage());
         }
     }
@@ -164,98 +162,44 @@ public class PanelController {
     @FXML
     private void alterar() {
         try {
-            String emissor = null;
-            while (emissor == null) {
-                TextInputDialog emissorDialog = new TextInputDialog();
-                emissorDialog.setTitle("Alterar Portaria");
-                emissorDialog.setHeaderText("Digite o emissor:");
-                Optional<String> emissorResult = emissorDialog.showAndWait();
-                if (!emissorResult.isPresent()) {
-                    showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de alteração cancelada.");
-                    return;
-                }
-                String input = emissorResult.get().trim();
-                if (input.isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo emissor não pode estar em branco.");
-                    continue;
-                }
-                emissor = input;
+            String emissor = promptInput("Alterar Portaria", "Digite o emissor:", false);
+            if (emissor == null) {
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de alteração cancelada.");
+                return;
             }
 
-            Integer num = null;
-            while (num == null) {
-                TextInputDialog numDialog = new TextInputDialog();
-                numDialog.setTitle("Alterar Portaria");
-                numDialog.setHeaderText("Digite o número:");
-                Optional<String> numResult = numDialog.showAndWait();
-                if (!numResult.isPresent()) {
-                    showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de alteração cancelada.");
-                    return;
-                }
-                String input = numResult.get().trim();
-                if (input.isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo número não pode estar em branco.");
-                    continue;
-                }
-                try {
-                    num = Integer.parseInt(input);
-                } catch (NumberFormatException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O número deve ser um valor numérico válido.");
-                }
+            Integer num = promptInteger("Alterar Portaria", "Digite o número:", false);
+            if (num == null) {
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de alteração cancelada.");
+                return;
             }
 
-            Integer ano = null;
-            while (ano == null) {
-                TextInputDialog anoDialog = new TextInputDialog();
-                anoDialog.setTitle("Alterar Portaria");
-                anoDialog.setHeaderText("Digite o ano:");
-                Optional<String> anoResult = anoDialog.showAndWait();
-                if (!anoResult.isPresent()) {
-                    showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de alteração cancelada.");
-                    return;
-                }
-                String input = anoResult.get().trim();
-                if (input.isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo ano não pode estar em branco.");
-                    continue;
-                }
-                try {
-                    ano = Integer.parseInt(input);
-                } catch (NumberFormatException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O ano deve ser um valor numérico válido.");
-                }
+            Integer ano = promptInteger("Alterar Portaria", "Digite o ano:", false);
+            if (ano == null) {
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de alteração cancelada.");
+                return;
             }
 
             Optional<Portaria> opt = repo.findPortaria(emissor, num, ano);
             if (opt.isPresent()) {
                 Portaria portaria = opt.get();
-                String novoMembro = null;
-                while (novoMembro == null) {
-                    TextInputDialog membroDialog = new TextInputDialog(portaria.getMembro());
-                    membroDialog.setTitle("Alterar Portaria");
-                    membroDialog.setHeaderText("Digite o novo membro:");
-                    Optional<String> novoMembroResult = membroDialog.showAndWait();
-                    if (!novoMembroResult.isPresent()) {
-                        showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de alteração cancelada.");
-                        return;
+                String novoMembro = promptInput("Alterar Portaria", "Digite o novo membro:", false, portaria.getMembro());
+                if (novoMembro != null) {
+                    portaria.setMembro(novoMembro);
+                    if (repo.update(portaria)) {
+                        showAlert(Alert.AlertType.INFORMATION, "Sucesso", "Portaria alterada com sucesso!");
+                        updateTable();
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Erro", "Erro ao alterar portaria.");
                     }
-                    String input = novoMembroResult.get().trim();
-                    if (input.isEmpty()) {
-                        showAlert(Alert.AlertType.ERROR, "Erro", "O campo novo membro não pode estar em branco.");
-                        continue;
-                    }
-                    novoMembro = input;
-                }
-                portaria.setMembro(novoMembro);
-                if (repo.update(portaria)) {
-                    showAlert(Alert.AlertType.INFORMATION, "Sucesso", "Portaria alterada com sucesso!");
                 } else {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "Erro ao alterar portaria.");
+                    showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de alteração cancelada.");
                 }
             } else {
                 showAlert(Alert.AlertType.ERROR, "Erro", "Portaria não encontrada.");
             }
         } catch (Exception e) {
+            System.err.println("Erro na alteração: " + e.getMessage());
             showAlert(Alert.AlertType.ERROR, "Erro", "Erro inesperado: " + e.getMessage());
         }
     }
@@ -263,74 +207,32 @@ public class PanelController {
     @FXML
     private void excluir() {
         try {
-            String emissor = null;
-            while (emissor == null) {
-                TextInputDialog emissorDialog = new TextInputDialog();
-                emissorDialog.setTitle("Excluir Portaria");
-                emissorDialog.setHeaderText("Digite o emissor:");
-                Optional<String> emissorResult = emissorDialog.showAndWait();
-                if (!emissorResult.isPresent()) {
-                    showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de exclusão cancelada.");
-                    return;
-                }
-                String input = emissorResult.get().trim();
-                if (input.isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo emissor não pode estar em branco.");
-                    continue;
-                }
-                emissor = input;
+            String emissor = promptInput("Excluir Portaria", "Digite o emissor:", false);
+            if (emissor == null) {
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de exclusão cancelada.");
+                return;
             }
 
-            Integer num = null;
-            while (num == null) {
-                TextInputDialog numDialog = new TextInputDialog();
-                numDialog.setTitle("Excluir Portaria");
-                numDialog.setHeaderText("Digite o número:");
-                Optional<String> numResult = numDialog.showAndWait();
-                if (!numResult.isPresent()) {
-                    showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de exclusão cancelada.");
-                    return;
-                }
-                String input = numResult.get().trim();
-                if (input.isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo número não pode estar em branco.");
-                    continue;
-                }
-                try {
-                    num = Integer.parseInt(input);
-                } catch (NumberFormatException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O número deve ser um valor numérico válido.");
-                }
+            Integer num = promptInteger("Excluir Portaria", "Digite o número:", false);
+            if (num == null) {
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de exclusão cancelada.");
+                return;
             }
 
-            Integer ano = null;
-            while (ano == null) {
-                TextInputDialog anoDialog = new TextInputDialog();
-                anoDialog.setTitle("Excluir Portaria");
-                anoDialog.setHeaderText("Digite o ano:");
-                Optional<String> anoResult = anoDialog.showAndWait();
-                if (!anoResult.isPresent()) {
-                    showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de exclusão cancelada.");
-                    return;
-                }
-                String input = anoResult.get().trim();
-                if (input.isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo ano não pode estar em branco.");
-                    continue;
-                }
-                try {
-                    ano = Integer.parseInt(input);
-                } catch (NumberFormatException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O ano deve ser um valor numérico válido.");
-                }
+            Integer ano = promptInteger("Excluir Portaria", "Digite o ano:", false);
+            if (ano == null) {
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", "Operação de exclusão cancelada.");
+                return;
             }
 
             if (repo.delete(emissor, num, ano)) {
                 showAlert(Alert.AlertType.INFORMATION, "Sucesso", "Portaria excluída com sucesso!");
+                updateTable();
             } else {
                 showAlert(Alert.AlertType.ERROR, "Erro", "Portaria não encontrada.");
             }
         } catch (Exception e) {
+            System.err.println("Erro na exclusão: " + e.getMessage());
             showAlert(Alert.AlertType.ERROR, "Erro", "Erro inesperado: " + e.getMessage());
         }
     }
@@ -339,77 +241,27 @@ public class PanelController {
     private void excluirTodos() {
         int regs = repo.delete();
         showAlert(Alert.AlertType.INFORMATION, "Sucesso", regs + " portarias excluídas!");
+        updateTable();
     }
 
     @FXML
     private void consultarTodos() {
         List<Portaria> todos = repo.findAll();
         showAlert(Alert.AlertType.INFORMATION, "Resultados", formatList(todos));
+        updateTable();
     }
 
     @FXML
     private void consultarPortaria() {
         try {
-            String emissor = null;
-            while (emissor == null) {
-                TextInputDialog emissorDialog = new TextInputDialog();
-                emissorDialog.setTitle("Consultar Portaria");
-                emissorDialog.setHeaderText("Digite o emissor:");
-                Optional<String> emissorResult = emissorDialog.showAndWait();
-                if (!emissorResult.isPresent()) {
-                    showAlert(Alert.AlertType.INFORMATION, "Cancelado", "Consulta de portaria cancelada.");
-                    return;
-                }
-                if (emissorResult.get().trim().isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo emissor não pode estar vazio.");
-                    continue;
-                }
-                emissor = emissorResult.get().trim();
-            }
+            String emissor = promptInput("Consultar Portaria", "Digite o emissor:", true);
+            if (emissor == null) return;
 
-            Integer num = null;
-            while (num == null) {
-                TextInputDialog numDialog = new TextInputDialog();
-                numDialog.setTitle("Consultar Portaria");
-                numDialog.setHeaderText("Digite o número:");
-                Optional<String> numResult = numDialog.showAndWait();
-                if (!numResult.isPresent()) {
-                    showAlert(Alert.AlertType.INFORMATION, "Cancelado", "Consulta de portaria cancelada.");
-                    return;
-                }
-                if (numResult.get().trim().isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo número não pode estar vazio.");
-                    continue;
-                }
-                try {
-                    num = Integer.parseInt(numResult.get().trim());
-                } catch (NumberFormatException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "Número inválido. Digite apenas valores numéricos.");
-                    continue;
-                }
-            }
+            Integer num = promptInteger("Consultar Portaria", "Digite o número:", true);
+            if (num == null) return;
 
-            Integer ano = null;
-            while (ano == null) {
-                TextInputDialog anoDialog = new TextInputDialog();
-                anoDialog.setTitle("Consultar Portaria");
-                anoDialog.setHeaderText("Digite o ano:");
-                Optional<String> anoResult = anoDialog.showAndWait();
-                if (!anoResult.isPresent()) {
-                    showAlert(Alert.AlertType.INFORMATION, "Cancelado", "Consulta de portaria cancelada.");
-                    return;
-                }
-                if (anoResult.get().trim().isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo ano não pode estar vazio.");
-                    continue;
-                }
-                try {
-                    ano = Integer.parseInt(anoResult.get().trim());
-                } catch (NumberFormatException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "Ano inválido. Digite apenas valores numéricos.");
-                    continue;
-                }
-            }
+            Integer ano = promptInteger("Consultar Portaria", "Digite o ano:", true);
+            if (ano == null) return;
 
             Optional<Portaria> opt = repo.findPortaria(emissor, num, ano);
             if (opt.isPresent()) {
@@ -418,28 +270,15 @@ public class PanelController {
                 showAlert(Alert.AlertType.ERROR, "Erro", "Portaria não encontrada.");
             }
         } catch (Exception e) {
+            System.err.println("Erro na consulta de portaria: " + e.getMessage());
             showAlert(Alert.AlertType.ERROR, "Erro", "Erro inesperado: " + e.getMessage());
         }
     }
 
     @FXML
     private void consultarEmissor() {
-        String emissor = null;
-        while (emissor == null) {
-            TextInputDialog emissorDialog = new TextInputDialog();
-            emissorDialog.setTitle("Consultar por Emissor");
-            emissorDialog.setHeaderText("Digite o emissor:");
-            Optional<String> emissorResult = emissorDialog.showAndWait();
-            if (!emissorResult.isPresent()) {
-                showAlert(Alert.AlertType.INFORMATION, "Cancelado", "Consulta por emissor cancelada.");
-                return;
-            }
-            if (emissorResult.get().trim().isEmpty()) {
-                showAlert(Alert.AlertType.ERROR, "Erro", "O campo emissor não pode estar vazio.");
-                continue;
-            }
-            emissor = emissorResult.get().trim();
-        }
+        String emissor = promptInput("Consultar por Emissor", "Digite o emissor:", true);
+        if (emissor == null) return;
         List<Portaria> list = repo.findByEmissor(emissor, StringSearch.PARTIAL_CASE_INSENSITIVE);
         showAlert(Alert.AlertType.INFORMATION, "Resultados", formatList(list));
     }
@@ -447,30 +286,12 @@ public class PanelController {
     @FXML
     private void consultarNumero() {
         try {
-            Integer num = null;
-            while (num == null) {
-                TextInputDialog numDialog = new TextInputDialog();
-                numDialog.setTitle("Consultar por Número");
-                numDialog.setHeaderText("Digite o número:");
-                Optional<String> numResult = numDialog.showAndWait();
-                if (!numResult.isPresent()) {
-                    showAlert(Alert.AlertType.INFORMATION, "Cancelado", "Consulta por número cancelada.");
-                    return;
-                }
-                if (numResult.get().trim().isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo número não pode estar vazio.");
-                    continue;
-                }
-                try {
-                    num = Integer.parseInt(numResult.get().trim());
-                } catch (NumberFormatException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "Número inválido. Digite apenas valores numéricos.");
-                    continue;
-                }
-            }
-            List<Portaria> list = repo.findByNúmero(num);
+            Integer num = promptInteger("Consultar por Número", "Digite o número:", true);
+            if (num == null) return;
+            List<Portaria> list = repo.findByNumero(num);
             showAlert(Alert.AlertType.INFORMATION, "Resultados", formatList(list));
         } catch (Exception e) {
+            System.err.println("Erro na consulta por número: " + e.getMessage());
             showAlert(Alert.AlertType.ERROR, "Erro", "Erro inesperado: " + e.getMessage());
         }
     }
@@ -478,30 +299,12 @@ public class PanelController {
     @FXML
     private void consultarPublicacao() {
         try {
-            LocalDate data = null;
-            while (data == null) {
-                TextInputDialog dataDialog = new TextInputDialog();
-                dataDialog.setTitle("Consultar por Publicação");
-                dataDialog.setHeaderText("Digite a data de publicação (yyyy-mm-dd):");
-                Optional<String> dataResult = dataDialog.showAndWait();
-                if (!dataResult.isPresent()) {
-                    showAlert(Alert.AlertType.INFORMATION, "Cancelado", "Consulta por publicação cancelada.");
-                    return;
-                }
-                if (dataResult.get().trim().isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo data não pode estar vazio.");
-                    continue;
-                }
-                try {
-                    data = LocalDate.parse(dataResult.get().trim());
-                } catch (DateTimeParseException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "Formato de data inválido. Use o formato yyyy-mm-dd.");
-                    continue;
-                }
-            }
-            List<Portaria> list = repo.findByPublicação(data);
+            LocalDate data = promptDate("Consultar por Publicação", "Digite a data de publicação (yyyy-mm-dd):", true);
+            if (data == null) return;
+            List<Portaria> list = repo.findByPublicacao(data);
             showAlert(Alert.AlertType.INFORMATION, "Resultados", formatList(list));
         } catch (Exception e) {
+            System.err.println("Erro na consulta por publicação: " + e.getMessage());
             showAlert(Alert.AlertType.ERROR, "Erro", "Erro inesperado: " + e.getMessage());
         }
     }
@@ -509,75 +312,24 @@ public class PanelController {
     @FXML
     private void consultarPeriodo() {
         try {
-            LocalDate start = null;
-            while (start == null) {
-                TextInputDialog startDialog = new TextInputDialog();
-                startDialog.setTitle("Consultar por Período");
-                startDialog.setHeaderText("Digite a data de início (yyyy-mm-dd):");
-                Optional<String> startResult = startDialog.showAndWait();
-                if (!startResult.isPresent()) {
-                    showAlert(Alert.AlertType.INFORMATION, "Cancelado", "Consulta por período cancelada.");
-                    return;
-                }
-                if (startResult.get().trim().isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo data de início não pode estar vazio.");
-                    continue;
-                }
-                try {
-                    start = LocalDate.parse(startResult.get().trim());
-                } catch (DateTimeParseException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "Formato de data inválido. Use o formato yyyy-mm-dd.");
-                    continue;
-                }
-            }
+            LocalDate start = promptDate("Consultar por Período", "Digite a data de início (yyyy-mm-dd):", false);
+            if (start == null) return;
 
-            LocalDate end = null;
-            while (end == null) {
-                TextInputDialog endDialog = new TextInputDialog();
-                endDialog.setTitle("Consultar por Período");
-                endDialog.setHeaderText("Digite a data de fim (yyyy-mm-dd):");
-                Optional<String> endResult = endDialog.showAndWait();
-                if (!endResult.isPresent()) {
-                    showAlert(Alert.AlertType.INFORMATION, "Cancelado", "Consulta por período cancelada.");
-                    return;
-                }
-                if (endResult.get().trim().isEmpty()) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "O campo data de fim não pode estar vazio.");
-                    continue;
-                }
-                try {
-                    end = LocalDate.parse(endResult.get().trim());
-                } catch (DateTimeParseException e) {
-                    showAlert(Alert.AlertType.ERROR, "Erro", "Formato de data inválido. Use o formato yyyy-mm-dd.");
-                    continue;
-                }
-            }
+            LocalDate end = promptDate("Consultar por Período", "Digite a data de fim (yyyy-mm-dd):", false);
+            if (end == null) return;
 
-            List<Portaria> list = repo.findByPeríodo(start, end);
+            List<Portaria> list = repo.findByPeriodo(start, end);
             showAlert(Alert.AlertType.INFORMATION, "Resultados", formatList(list));
         } catch (Exception e) {
+            System.err.println("Erro na consulta por período: " + e.getMessage());
             showAlert(Alert.AlertType.ERROR, "Erro", "Erro inesperado: " + e.getMessage());
         }
     }
 
     @FXML
     private void consultarNome() {
-        String nome = null;
-        while (nome == null) {
-            TextInputDialog nomeDialog = new TextInputDialog();
-            nomeDialog.setTitle("Consultar por Nome");
-            nomeDialog.setHeaderText("Digite o nome do membro:");
-            Optional<String> nomeResult = nomeDialog.showAndWait();
-            if (!nomeResult.isPresent()) {
-                showAlert(Alert.AlertType.INFORMATION, "Cancelado", "Consulta por nome cancelada.");
-                return;
-            }
-            if (nomeResult.get().trim().isEmpty()) {
-                showAlert(Alert.AlertType.ERROR, "Erro", "O campo nome não pode estar vazio.");
-                continue;
-            }
-            nome = nomeResult.get().trim();
-        }
+        String nome = promptInput("Consultar por Nome", "Digite o nome do membro:", true);
+        if (nome == null) return;
         List<Portaria> list = repo.findByMembro(nome, StringSearch.PARTIAL_CASE_INSENSITIVE);
         showAlert(Alert.AlertType.INFORMATION, "Resultados", formatList(list));
     }
@@ -587,22 +339,112 @@ public class PanelController {
         Stage stage = (Stage) voltarButton.getScene().getWindow();
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/br/edu/ifpr/gep/panel/MainPanel.fxml"));
 
-        // Verifica se o recurso FXML foi encontrado
         if (loader.getLocation() == null) {
-            showAlert(Alert.AlertType.ERROR, "Erro", "Arquivo FXML não encontrado: /br/edu/ifpr/gep/MainPanel.fxml");
+            showAlert(Alert.AlertType.ERROR, "Erro", "Arquivo FXML não encontrado: /br/edu/ifpr/gep/panel/MainPanel.fxml");
             return;
         }
 
-        // Carrega o TabPane, já que o elemento raiz do MainPanel.fxml é um TabPane
         TabPane tabPane = loader.load();
-        Scene scene = new Scene(tabPane, 600, 400); // Ajusta as dimensões conforme o FXML (prefWidth=600, prefHeight=400)
+        Scene scene = new Scene(tabPane, 600, 400);
 
-        // Adiciona o arquivo CSS
-        scene.getStylesheets().add(getClass().getResource("/br/edu/ifpr/gep/DesignPanel.css").toExternalForm());
+        var cssResource = getClass().getResource("/br/edu/ifpr/gep/DesignPanel.css");
+        if (cssResource != null) {
+            scene.getStylesheets().add(cssResource.toExternalForm());
+        } else {
+            System.err.println("CSS não encontrado: /br/edu/ifpr/gep/DesignPanel.css");
+        }
 
-        // Define a nova cena na janela
         stage.setScene(scene);
         stage.show();
+    }
+
+    // Métodos auxiliares para prompts
+    private String promptInput(String title, String header, boolean allowCancel) {
+        while (true) {
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle(title);
+            dialog.setHeaderText(header);
+            Optional<String> result = dialog.showAndWait();
+            if (!result.isPresent()) {
+                if (allowCancel) return null;
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", title + " cancelada.");
+                continue;
+            }
+            String input = result.get().trim();
+            if (input.isEmpty()) {
+                showAlert(Alert.AlertType.ERROR, "Erro", header + " não pode estar em branco.");
+                continue;
+            }
+            return input;
+        }
+    }
+
+    private String promptInput(String title, String header, boolean allowCancel, String defaultValue) {
+        while (true) {
+            TextInputDialog dialog = new TextInputDialog(defaultValue);
+            dialog.setTitle(title);
+            dialog.setHeaderText(header);
+            Optional<String> result = dialog.showAndWait();
+            if (!result.isPresent()) {
+                if (allowCancel) return null;
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", title + " cancelada.");
+                continue;
+            }
+            String input = result.get().trim();
+            if (input.isEmpty()) {
+                showAlert(Alert.AlertType.ERROR, "Erro", header + " não pode estar em branco.");
+                continue;
+            }
+            return input;
+        }
+    }
+
+    private Integer promptInteger(String title, String header, boolean allowCancel) {
+        while (true) {
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle(title);
+            dialog.setHeaderText(header);
+            Optional<String> result = dialog.showAndWait();
+            if (!result.isPresent()) {
+                if (allowCancel) return null;
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", title + " cancelada.");
+                continue;
+            }
+            String input = result.get().trim();
+            if (input.isEmpty()) {
+                showAlert(Alert.AlertType.ERROR, "Erro", header + " não pode estar em branco.");
+                continue;
+            }
+            try {
+                return Integer.parseInt(input);
+            } catch (NumberFormatException e) {
+                showAlert(Alert.AlertType.ERROR, "Erro", header + " deve ser um valor numérico válido.");
+            }
+        }
+    }
+
+    private LocalDate promptDate(String title, String header, boolean allowCancel) {
+        while (true) {
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle(title);
+            dialog.setHeaderText(header);
+            Optional<String> result = dialog.showAndWait();
+            if (!result.isPresent()) {
+                if (allowCancel) return null;
+                showAlert(Alert.AlertType.WARNING, "Ação Cancelada", title + " cancelada.");
+                continue;
+            }
+            String input = result.get().trim();
+            if (input.isEmpty()) {
+                showAlert(Alert.AlertType.ERROR, "Erro", header + " não pode estar em branco.");
+                continue;
+            }
+            try {
+                return LocalDate.parse(input);
+            } catch (DateTimeParseException e) {
+                showAlert(Alert.AlertType.ERROR, "Erro", header + " deve estar no formato yyyy-mm-dd.");
+            }
+        }
     }
 
     private void showAlert(Alert.AlertType alertType, String title, String message) {
