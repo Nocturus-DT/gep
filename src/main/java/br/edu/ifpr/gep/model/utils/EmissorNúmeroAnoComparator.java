@@ -14,12 +14,12 @@ public class EmissorNúmeroAnoComparator implements Comparator<Portaria> {
         }
 
         // 2. se emissores iguais, compara números
-        int numeroComp = o1.getNúmero().compareTo(o2.getNúmero());
+        int numeroComp = o1.getNumero().compareTo(o2.getNumero());
         if (numeroComp != 0) {
             return numeroComp;
         }
 
         // 3. se nomes e números são iguais, compara anos
-        return Integer.compare(o1.getPublicação().getYear(), o2.getPublicação().getYear());
+        return Integer.compare(o1.getPublicacao().getYear(), o2.getPublicacao().getYear());
     }
 }

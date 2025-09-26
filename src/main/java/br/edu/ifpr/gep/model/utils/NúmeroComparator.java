@@ -7,8 +7,8 @@ import br.edu.ifpr.gep.model.Portaria;
 public class NúmeroComparator implements Comparator<Portaria> {
 	@Override
 	public int compare(Portaria o1, Portaria o2) {
-		int o1Número = o1.getNúmero().intValue();
-		int o2Número = o2.getNúmero().intValue();
+		int o1Número = o1.getNumero().intValue();
+		int o2Número = o2.getNumero().intValue();
 
 		if (o1Número < o2Número) return -1;
 		else

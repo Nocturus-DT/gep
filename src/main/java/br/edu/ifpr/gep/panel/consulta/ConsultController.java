@@ -171,7 +171,7 @@ public class ConsultController {
                     continue;
                 }
             }
-            List<Portaria> list = repo.findByNúmero(num);
+            List<Portaria> list = repo.findByNumero(num);
             showAlert(Alert.AlertType.INFORMATION, "Resultados", formatList(list));
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Erro", "Erro inesperado: " + e.getMessage());
@@ -202,7 +202,7 @@ public class ConsultController {
                     continue;
                 }
             }
-            List<Portaria> list = repo.findByPublicação(data);
+            List<Portaria> list = repo.findByPublicacao(data);
             showAlert(Alert.AlertType.INFORMATION, "Resultados", formatList(list));
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Erro", "Erro inesperado: " + e.getMessage());
@@ -256,7 +256,7 @@ public class ConsultController {
                 }
             }
 
-            List<Portaria> list = repo.findByPeríodo(start, end);
+            List<Portaria> list = repo.findByPeriodo(start, end);
             showAlert(Alert.AlertType.INFORMATION, "Resultados", formatList(list));
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Erro", "Erro inesperado: " + e.getMessage());
